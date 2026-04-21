@@ -223,7 +223,11 @@ export function App() {
     <div className="app">
       <header className="hero">
         <img
-          src="/word-court.png"
+          src="/word-court.webp"
+          width={1200}
+          height={670}
+          fetchPriority="high"
+          decoding="async"
           alt="A dignified courtroom labelled 'Word Court' — a judge at the bench, a witness on the left, a lawyer at a lectern on the right, a jury at the back."
         />
         <div className="text">

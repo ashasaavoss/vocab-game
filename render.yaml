@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: vocabulary-sampler
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ALLOWED_ORIGIN
+        sync: false
+      - key: GLOBAL_DAILY_LIMIT
+        value: "500"

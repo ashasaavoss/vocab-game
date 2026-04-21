@@ -49,7 +49,8 @@ export function WordPrompt({ entry, onSubmit, onNext, submitting }: Props) {
 
   return (
     <div className="panel">
-      <h2 className="word">{entry.word}</h2>
+      <h2>Next question for the witness</h2>
+      <p className="word">{entry.word}</p>
       <div className="pos">{POS_LABEL[entry.pos] ?? entry.pos}</div>
 
       <textarea
@@ -72,7 +73,7 @@ export function WordPrompt({ entry, onSubmit, onNext, submitting }: Props) {
             I don't know
           </button>
           <button onClick={() => handleSubmit(false)} disabled={submitting || !text.trim()}>
-            {submitting ? "Grading…" : "Submit"}
+            {submitting ? "Deliberating…" : "Testify"}
           </button>
         </div>
       )}
@@ -81,11 +82,26 @@ export function WordPrompt({ entry, onSubmit, onNext, submitting }: Props) {
 
       {feedback && (
         <div className="feedback">
-          <div>
-            <span className={`grade ${feedback.grade}`}>{feedback.grade.toUpperCase()}</span>
+          <div
+            className="row space"
+            style={{ alignItems: "baseline", marginBottom: 6 }}
+          >
+            <span
+              className="muted"
+              style={{
+                fontSize: 11,
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+              }}
+            >
+              Judgment
+            </span>
+            <span className={`grade ${feedback.grade}`}>
+              {feedback.grade.toUpperCase()}
+            </span>
           </div>
           {feedback.rationale && (
-            <div style={{ marginTop: 10 }}>
+            <div style={{ marginTop: 8 }}>
               <div
                 className="muted"
                 style={{
@@ -95,9 +111,9 @@ export function WordPrompt({ entry, onSubmit, onNext, submitting }: Props) {
                   marginBottom: 2,
                 }}
               >
-                Gemini's reasoning
+                The court's reasoning
               </div>
-              <div style={{ fontSize: 14 }}>{feedback.rationale}</div>
+              <div className="rationale">{feedback.rationale}</div>
             </div>
           )}
           <div style={{ marginTop: 10 }}>
@@ -112,10 +128,10 @@ export function WordPrompt({ entry, onSubmit, onNext, submitting }: Props) {
             >
               Reference definition
             </div>
-            <div style={{ fontSize: 14 }}>{entry.definition}</div>
+            <div className="ref" style={{ marginTop: 0 }}>{entry.definition}</div>
           </div>
           <div className="row" style={{ marginTop: 14 }}>
-            <button onClick={onNext} autoFocus>Next word →</button>
+            <button onClick={onNext} autoFocus>Next Question</button>
           </div>
         </div>
       )}

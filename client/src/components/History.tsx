@@ -78,8 +78,8 @@ function HistoryItem({ response }: { response: Response }) {
   return (
     <div
       style={{
-        border: "1px solid var(--border)",
-        borderRadius: 8,
+        border: "1px solid var(--border-soft)",
+        borderRadius: 4,
         padding: 12,
         background: "var(--panel-2)",
       }}

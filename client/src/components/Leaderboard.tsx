@@ -100,7 +100,7 @@ export function Leaderboard({ currentUsername }: Props) {
           <thead>
             <tr style={{ color: "var(--muted)", textAlign: "left" }}>
               <Th>#</Th>
-              <Th>User</Th>
+              <Th>Defendant</Th>
               <Th style={{ textAlign: "right" }}>Rough+ vocab</Th>
               <Th style={{ textAlign: "right" }}>Precise</Th>
               <Th style={{ textAlign: "right" }}>Gist+</Th>
@@ -118,8 +118,8 @@ export function Leaderboard({ currentUsername }: Props) {
                 <tr
                   key={e.username}
                   style={{
-                    borderTop: "1px solid var(--border)",
-                    background: isMe ? "rgba(138, 180, 255, 0.08)" : undefined,
+                    borderTop: "1px solid var(--border-soft)",
+                    background: isMe ? "rgba(122, 31, 43, 0.08)" : undefined,
                   }}
                 >
                   <Td>{i + 1}</Td>

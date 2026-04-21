@@ -11,7 +11,6 @@ import {
   parseImport,
   DIFFICULTY_OFFSET,
   type UserState,
-  type DifficultyMode,
 } from "./lib/user";
 import { pickNextWord } from "./lib/sampler";
 import { estimate, type Grade } from "./lib/stats";
@@ -21,7 +20,6 @@ import { Progress } from "./components/Progress";
 import { Results } from "./components/Results";
 import { History } from "./components/History";
 import { UserPicker } from "./components/UserPicker";
-import { DifficultySelector } from "./components/DifficultySelector";
 import { Leaderboard } from "./components/Leaderboard";
 
 type View = "play" | "history" | "leaderboard";
@@ -117,15 +115,6 @@ export function App() {
     }
   }
 
-  function handleChangeDifficulty(mode: DifficultyMode) {
-    if (!user || user.difficultyMode === mode) return;
-    const next: UserState = { ...user, difficultyMode: mode };
-    saveUser(next);
-    setUser(next);
-    // Re-pick the next word under the new difficulty target.
-    setCurrentWord(null);
-  }
-
   const betas = useMemo(() => (corpus ? corpusBetas(corpus) : null), [corpus]);
 
   // Remap stored response β values against the current corpus so β scale stays
@@ -144,11 +133,10 @@ export function App() {
   // Pick next word whenever needed (no test-length cap).
   useEffect(() => {
     if (!corpus || !user || currentWord) return;
-    const offset = DIFFICULTY_OFFSET[user.difficultyMode];
     const next = pickNextWord(
       corpus,
       syncedResponses.map((r) => ({ word: r.word, beta: r.beta, grade: r.grade })),
-      offset,
+      DIFFICULTY_OFFSET.medium,
     );
     setCurrentWord(next);
   }, [corpus, user, currentWord, syncedResponses]);
@@ -168,7 +156,7 @@ export function App() {
     void uploadStats({
       username: user.username,
       nAnswered: user.responses.length,
-      difficultyMode: user.difficultyMode,
+      difficultyMode: "medium",
       corpusSize: corpus.size,
       theta: {
         precise: estimateResult.posteriors.precise.mean,
@@ -233,47 +221,45 @@ export function App() {
 
   return (
     <div className="app">
-      <header>
-        <div>
-          <h1>Vocabulary Sampler</h1>
-          <div className="sub">
-            Define words in your own words. Posterior vocabulary estimate updates
-            live and tightens with each answer.
-          </div>
-        </div>
-        <div className="row" style={{ gap: 4 }}>
-          {user && (
-            <>
-              <button
-                className={view === "play" ? "secondary" : "ghost"}
-                onClick={() => setView("play")}
-                style={{ padding: "6px 10px", fontSize: 13 }}
-              >
-                Play
-              </button>
-              <button
-                className={view === "leaderboard" ? "secondary" : "ghost"}
-                onClick={() => setView("leaderboard")}
-                style={{ padding: "6px 10px", fontSize: 13 }}
-              >
-                Leaderboard
-              </button>
-              <button
-                className={view === "history" ? "secondary" : "ghost"}
-                onClick={() => setView("history")}
-                style={{ padding: "6px 10px", fontSize: 13 }}
-              >
-                History
-                {user.responses.length > 0 && (
-                  <span className="muted" style={{ marginLeft: 4, fontSize: 11 }}>
-                    ({user.responses.length})
-                  </span>
-                )}
-              </button>
-            </>
-          )}
+      <header className="hero">
+        <img
+          src="/word-court.png"
+          alt="A dignified courtroom labelled 'Word Court' — a judge at the bench, a witness on the left, a lawyer at a lectern on the right, a jury at the back."
+        />
+        <div className="text">
+          <h1>Word Court</h1>
+          <p className="subtitle">How many words do you know?</p>
+          <p className="byline">by Asha</p>
         </div>
       </header>
+
+      {user && (
+        <nav className="topnav">
+          <button
+            className={`tab ${view === "play" ? "active" : ""}`}
+            onClick={() => setView("play")}
+          >
+            Play
+          </button>
+          <button
+            className={`tab ${view === "leaderboard" ? "active" : ""}`}
+            onClick={() => setView("leaderboard")}
+          >
+            Docket
+          </button>
+          <button
+            className={`tab ${view === "history" ? "active" : ""}`}
+            onClick={() => setView("history")}
+          >
+            Case File
+            {user.responses.length > 0 && (
+              <span style={{ marginLeft: 4, opacity: 0.7 }}>
+                ({user.responses.length})
+              </span>
+            )}
+          </button>
+        </nav>
+      )}
 
       {loadError && <div className="error">Failed to load corpus: {loadError}</div>}
 
@@ -304,8 +290,8 @@ export function App() {
       {!showPicker && user && corpus && (
         <>
           <div className="row space" style={{ alignItems: "baseline" }}>
-            <div style={{ fontSize: 14 }}>
-              Playing as{" "}
+            <div style={{ fontFamily: "var(--font-body-serif)", fontSize: 14 }}>
+              Defendant:{" "}
               <span style={{ fontWeight: 600, color: "var(--accent)" }}>
                 {user.username}
               </span>
@@ -348,13 +334,6 @@ export function App() {
             totalAnswered={user.responses.length}
             universeSize={corpus.size}
           />
-
-          {view === "play" && (
-            <DifficultySelector
-              mode={user.difficultyMode}
-              onChange={handleChangeDifficulty}
-            />
-          )}
 
           {view === "play" && currentWord && (
             <WordPrompt

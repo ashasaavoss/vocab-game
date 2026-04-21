@@ -48,39 +48,30 @@ export function UserPicker({ knownUsers, onSelect, onImportClick }: Props) {
 
   return (
     <div className="panel">
-      <h2 style={{ marginTop: 0, fontSize: 18 }}>Who's playing?</h2>
+      <h2>Who approaches the bench?</h2>
       <div className="muted" style={{ fontSize: 13, marginBottom: 16 }}>
         Progress is stored locally in this browser, per username. No password —
         this is friends-only.
       </div>
 
       {knownUsers.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 18 }}>
           <div
             className="muted"
             style={{
               fontSize: 11,
               textTransform: "uppercase",
-              letterSpacing: "0.05em",
+              letterSpacing: "0.08em",
               marginBottom: 6,
             }}
           >
-            Returning user
+            Returning defendant
           </div>
           <div className="row" style={{ gap: 8 }}>
             <select
               value={picked}
               onChange={(e) => setPicked(e.target.value)}
-              style={{
-                flex: 1,
-                padding: "9px 12px",
-                background: "var(--panel-2)",
-                color: "var(--text)",
-                border: "1px solid var(--border)",
-                borderRadius: 8,
-                font: "inherit",
-                fontSize: 15,
-              }}
+              style={{ flex: 1 }}
             >
               {knownUsers.map((u) => (
                 <option key={u} value={u}>
@@ -99,11 +90,11 @@ export function UserPicker({ knownUsers, onSelect, onImportClick }: Props) {
           style={{
             fontSize: 11,
             textTransform: "uppercase",
-            letterSpacing: "0.05em",
+            letterSpacing: "0.08em",
             marginBottom: 6,
           }}
         >
-          New user
+          New defendant
         </div>
         <div className="row" style={{ gap: 8 }}>
           <input
@@ -118,18 +109,9 @@ export function UserPicker({ knownUsers, onSelect, onImportClick }: Props) {
               if (e.key === "Enter") handleCreate();
             }}
             maxLength={20}
-            style={{
-              flex: 1,
-              padding: "9px 12px",
-              background: "var(--panel-2)",
-              color: "var(--text)",
-              border: "1px solid var(--border)",
-              borderRadius: 8,
-              font: "inherit",
-              fontSize: 15,
-            }}
+            style={{ flex: 1 }}
           />
-          <button onClick={handleCreate}>Start</button>
+          <button onClick={handleCreate}>Begin</button>
         </div>
         {error && (
           <div className="error" style={{ marginTop: 10 }}>
@@ -140,9 +122,9 @@ export function UserPicker({ knownUsers, onSelect, onImportClick }: Props) {
 
       <div
         style={{
-          marginTop: 20,
-          paddingTop: 16,
-          borderTop: "1px solid var(--border)",
+          marginTop: 18,
+          paddingTop: 14,
+          borderTop: "1px solid var(--border-soft)",
         }}
       >
         <div
@@ -150,7 +132,7 @@ export function UserPicker({ knownUsers, onSelect, onImportClick }: Props) {
           style={{
             fontSize: 11,
             textTransform: "uppercase",
-            letterSpacing: "0.05em",
+            letterSpacing: "0.08em",
             marginBottom: 6,
           }}
         >

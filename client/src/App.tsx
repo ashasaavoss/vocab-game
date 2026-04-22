@@ -141,6 +141,17 @@ export function App() {
     setCurrentWord(next);
   }, [corpus, user, currentWord, syncedResponses]);
 
+  // If the user leaves Play after submitting (without clicking Next), the
+  // pinned currentWord becomes stale — returning to Play would otherwise
+  // re-show an already-answered word. Clear it so a fresh pick happens.
+  useEffect(() => {
+    if (view === "play") return;
+    if (!user || !currentWord) return;
+    if (user.responses.some((r) => r.word === currentWord.word)) {
+      setCurrentWord(null);
+    }
+  }, [view, user, currentWord]);
+
   const estimateResult = useMemo(() => {
     if (!user || !betas) return null;
     return estimate(

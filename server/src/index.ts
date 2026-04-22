@@ -145,7 +145,7 @@ function isNum(x: unknown): x is number {
   return typeof x === "number" && Number.isFinite(x);
 }
 
-app.post("/api/stats", (req, res) => {
+app.post("/api/stats", async (req, res) => {
   const body = req.body as Record<string, unknown>;
 
   const username =
@@ -195,21 +195,37 @@ app.post("/api/stats", (req, res) => {
     corpusSize,
     updatedAt: new Date().toISOString(),
   };
-  upsertEntry(entry);
-  res.json({ ok: true });
+  try {
+    await upsertEntry(entry);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[server] leaderboard upsert failed:", err);
+    res.status(502).json({ error: "store_unavailable" });
+  }
 });
 
-app.get("/api/leaderboard", (_req, res) => {
-  res.json({ entries: listEntries() });
+app.get("/api/leaderboard", async (_req, res) => {
+  try {
+    const entries = await listEntries();
+    res.json({ entries });
+  } catch (err) {
+    console.error("[server] leaderboard list failed:", err);
+    res.status(502).json({ error: "store_unavailable" });
+  }
 });
 
-app.delete("/api/stats/:username", (req, res) => {
+app.delete("/api/stats/:username", async (req, res) => {
   const username = req.params.username;
   if (!username || !/^[a-z][a-z0-9_]{1,19}$/i.test(username)) {
     return res.status(400).json({ error: "invalid username" });
   }
-  deleteEntry(username);
-  res.json({ ok: true });
+  try {
+    await deleteEntry(username);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[server] leaderboard delete failed:", err);
+    res.status(502).json({ error: "store_unavailable" });
+  }
 });
 
 // In production, serve the built client as static files from the same origin.

@@ -1,17 +1,17 @@
 /**
- * File-backed leaderboard store. One JSON file keyed by username. The whole
- * thing is loaded into memory on startup and rewritten atomically on every
- * upsert. Low-volume, friends-only — no need for a real database.
+ * Leaderboard store backed by Upstash Redis (REST).
+ *
+ * Schema: a single hash at key `leaderboard`, with one field per username
+ * (lowercased) whose value is the JSON-encoded LeaderboardEntry.
+ *
+ * If UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN are not set (e.g. local
+ * dev without an Upstash account), we fall back to an in-memory Map. That
+ * fallback is explicitly non-durable — fine for localhost, useless in prod.
  */
 
-import { readFileSync, existsSync, writeFileSync, renameSync, mkdirSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { Redis } from "@upstash/redis";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = resolve(__dirname, "..", "data");
-const STORE_PATH = resolve(DATA_DIR, "leaderboard.json");
-const TMP_PATH = resolve(DATA_DIR, "leaderboard.tmp.json");
+const HASH_KEY = "leaderboard";
 
 export type Level = "precise" | "rough" | "gist";
 
@@ -30,53 +30,67 @@ export type LeaderboardEntry = {
   corpusSize: number; // the universe the estimate was computed against
 };
 
-let store: Map<string, LeaderboardEntry> = new Map();
+const redis: Redis | null = (() => {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) {
+    console.warn(
+      "[leaderboard] UPSTASH_REDIS_REST_URL/TOKEN not set — using in-memory fallback (non-durable).",
+    );
+    return null;
+  }
+  return new Redis({ url, token });
+})();
 
-function ensureDir(): void {
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-}
+const memory: Map<string, LeaderboardEntry> = new Map();
 
-function loadFromDisk(): void {
-  try {
-    if (!existsSync(STORE_PATH)) {
-      store = new Map();
-      return;
+function parseEntry(raw: unknown): LeaderboardEntry | null {
+  if (raw == null) return null;
+  // Upstash auto-decodes JSON values for us, but tolerate strings too.
+  if (typeof raw === "string") {
+    try {
+      return JSON.parse(raw) as LeaderboardEntry;
+    } catch {
+      return null;
     }
-    const raw = readFileSync(STORE_PATH, "utf8");
-    const parsed = JSON.parse(raw) as Record<string, LeaderboardEntry>;
-    store = new Map(Object.entries(parsed));
-  } catch (err) {
-    console.error("[leaderboard] failed to load store, starting empty:", err);
-    store = new Map();
+  }
+  if (typeof raw === "object") return raw as LeaderboardEntry;
+  return null;
+}
+
+export async function upsertEntry(entry: LeaderboardEntry): Promise<void> {
+  const key = entry.username.toLowerCase();
+  if (redis) {
+    await redis.hset(HASH_KEY, { [key]: JSON.stringify(entry) });
+  } else {
+    memory.set(key, entry);
   }
 }
 
-function persist(): void {
-  try {
-    ensureDir();
-    const obj: Record<string, LeaderboardEntry> = {};
-    for (const [k, v] of store) obj[k] = v;
-    writeFileSync(TMP_PATH, JSON.stringify(obj, null, 2), "utf8");
-    renameSync(TMP_PATH, STORE_PATH); // atomic on POSIX and Windows (same volume)
-  } catch (err) {
-    console.error("[leaderboard] failed to persist:", err);
+export async function listEntries(): Promise<LeaderboardEntry[]> {
+  let entries: LeaderboardEntry[];
+  if (redis) {
+    const all = (await redis.hgetall(HASH_KEY)) as Record<string, unknown> | null;
+    entries = [];
+    if (all) {
+      for (const v of Object.values(all)) {
+        const parsed = parseEntry(v);
+        if (parsed) entries.push(parsed);
+      }
+    }
+  } else {
+    entries = Array.from(memory.values());
   }
+  return entries.sort(
+    (a, b) => b.totalVocab.rough.mean - a.totalVocab.rough.mean,
+  );
 }
 
-loadFromDisk();
-
-export function upsertEntry(entry: LeaderboardEntry): void {
-  store.set(entry.username.toLowerCase(), entry);
-  persist();
-}
-
-export function listEntries(): LeaderboardEntry[] {
-  return Array.from(store.values()).sort((a, b) => {
-    // Primary: rough+ total vocab mean, descending.
-    return b.totalVocab.rough.mean - a.totalVocab.rough.mean;
-  });
-}
-
-export function deleteEntry(username: string): void {
-  if (store.delete(username.toLowerCase())) persist();
+export async function deleteEntry(username: string): Promise<void> {
+  const key = username.toLowerCase();
+  if (redis) {
+    await redis.hdel(HASH_KEY, key);
+  } else {
+    memory.delete(key);
+  }
 }
